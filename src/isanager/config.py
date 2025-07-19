@@ -88,6 +88,9 @@ class Config:
         return True
 
     def get_targets(self) -> list:
+        if self.is_all:
+            return self.services
+
         targets = []
         for srv in self.services:
             find_key = "group" if self.is_group else "code"
