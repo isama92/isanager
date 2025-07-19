@@ -1,0 +1,7 @@
+services:
+  - code: service_code
+    path: 'path/to/service'
+    name: 'Optional Service Name'
+    group: optional_service_group
+  - code: second_service_code
+    path: 'path/to/service'

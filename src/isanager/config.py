@@ -20,31 +20,12 @@ def load_env() -> bool:
     return True
 
 
-def load_config() -> dict | None:
-    logger.debug(f"loading {config_file_path}")
-
-    try:
-        f = open(config_file_path, "r")
-    except FileNotFoundError:
-        logger.error(f"{config_file_path} not found")
-        return None
-
-    config = yaml_load(f)
-
-    if not isinstance(config, dict):
-        logger.error(f"{config_file_path} is empty or malformed")
-        return None
-
-    logger.debug(f"{config_file_path} loaded")
-
-    return config
-
-
-class Args:
+class Config:
     command: str | None
     target: str | None
     is_group: bool
     is_all: bool
+    services: list
     UP = "up"
     DOWN = "down"
     UPDATE = "update"
@@ -55,11 +36,13 @@ class Args:
         target: str | None = None,
         is_group: bool = False,
         is_all: bool = False,
+        services: list | None = None,
     ):
-        self.command = command
-        self.target = target
+        self.command = command.lower() if command is not None else None
+        self.target = target.lower() if target is not None else None
         self.is_group = is_group
         self.is_all = is_all
+        self.services = services if services is not None else []
 
     def to_dict(self):
         return {
@@ -67,6 +50,7 @@ class Args:
             "target": self.target,
             "is_group": self.is_group,
             "is_all": self.is_all,
+            "services": self.services,
         }
 
     def verify(self) -> bool:
@@ -86,18 +70,28 @@ class Args:
             logger.error("Is group and is all together are not allowed")
             return False
 
-        # TODO: check target exists in services/groups (if all is false)
+        if self.services is None or len(self.services) == 0:
+            logger.error("Config `services` are required")
+            return False
+
+        if not self.is_all:
+            check_key = "group" if self.is_group else "code"
+            service_checks = [srv.get(check_key) for srv in self.services]
+            if self.target not in service_checks:
+                logger.error(f"Service {check_key} '{self.target}' does not exist")
+                return False
 
         return True
 
     @staticmethod
-    def load(arg_list: list[str] | None = None):
+    def load_args(preset_args: list[str] | None = None) -> dict:
+        logger.debug(f"loading args")
         parser = argparse.ArgumentParser(description="Manage your docker services")
 
         parser.add_argument(
             "command",
             type=str,
-            choices=[Args.UP, Args.DOWN, Args.UPDATE],
+            choices=[Config.UP, Config.DOWN, Config.UPDATE],
             help="The command to run",
         )
         parser.add_argument(
@@ -126,8 +120,45 @@ class Args:
         )
 
         try:
-            args = parser.parse_args(arg_list)
+            args = parser.parse_args(preset_args)
+            logger.debug(f"args loaded")
+            return vars(args)
         except SystemExit:
-            return Args()
+            logger.error(f"args load failed")
+            return {}
 
-        return Args(args.command, args.target, args.group, args.all)
+    @staticmethod
+    def load_configs(preset_config: dict | None = None) -> dict | None:
+        logger.debug(f"loading {config_file_path}")
+
+        if preset_config is not None:
+            return preset_config
+
+        try:
+            f = open(config_file_path, "r")
+        except FileNotFoundError:
+            logger.error(f"{config_file_path} not found")
+            return None
+
+        config = yaml_load(f)
+
+        if not isinstance(config, dict):
+            logger.error(f"{config_file_path} is empty or malformed")
+            return None
+
+        logger.debug(f"{config_file_path} loaded")
+
+        return config
+
+    @staticmethod
+    def load(preset_args: list[str] | None = None, preset_configs: dict | None = None):
+        args = Config.load_args(preset_args)
+        configs = Config.load_configs(preset_configs)
+
+        return Config(
+            args.get("command"),
+            args.get("target"),
+            args.get("group", False),
+            args.get("all", False),
+            configs.get("services"),
+        )

@@ -1,46 +1,52 @@
 import pytest
-from src.isanager.config import Args
+from src.isanager.config import Config
 
 
 @pytest.mark.parametrize(
-    "test_input,expected",
+    "test_args,test_configs,expected",
     [
         # fmt: off
-        (["up", "abc"], {"command": "up", "target": "abc", "is_group": False, "is_all": False}),
-        (["down", "abc", "-g"], {"command": "down", "target": "abc", "is_group": True, "is_all": False}),
-        (["down", "abc", "--group"], {"command": "down", "target": "abc", "is_group": True, "is_all": False}),
-        (["update"], {"command": "update", "target": None, "is_group": False, "is_all": False}),
-        (["update", "-a"], {"command": "update", "target": None, "is_group": False, "is_all": True}),
-        (["update", "--all"], {"command": "update", "target": None, "is_group": False, "is_all": True}),
-        (["update", "-g", "-a"], {"command": "update", "target": None, "is_group": True, "is_all": True}),
-        (["update", "abc", "-g", "-a"], {"command": "update", "target": "abc", "is_group": True, "is_all": True}),
-        (["-g", "-a"], {"command": None, "target": None, "is_group": False, "is_all": False}),
-        (["-g"], {"command": None, "target": None, "is_group": False, "is_all": False}),
-        (["-a"], {"command": None, "target": None, "is_group": False, "is_all": False}),
-        ([], {"command": None, "target": None, "is_group": False, "is_all": False}),
+        (["up", "abc"], {'services': [{'code': 'abc'}]}, {"command": "up", "target": "abc", "is_group": False, "is_all": False, 'services': [{'code': 'abc'}]}),
+        (["down", "abc", "-g"], {'services': [{'code': 'abc', 'group': 'abc'}]}, {"command": "down", "target": "abc", "is_group": True, "is_all": False, 'services': [{'code': 'abc', 'group': 'abc'}]}),
+        (["down", "abc", "--group"], {'services': [{'code': 'abc', 'group': 'abc'}]}, {"command": "down", "target": "abc", "is_group": True, "is_all": False, 'services': [{'code': 'abc', 'group': 'abc'}]}),
+        (["update"], {'services': [{'code': 'abc'}]}, {"command": "update", "target": None, "is_group": False, "is_all": False, 'services': [{'code': 'abc'}]}),
+        (["update", "-a"], {'services': [{'code': 'abc'}]}, {"command": "update", "target": None, "is_group": False, "is_all": True, 'services': [{'code': 'abc'}]}),
+        (["update", "--all"], {'services': [{'code': 'abc'}]}, {"command": "update", "target": None, "is_group": False, "is_all": True, 'services': [{'code': 'abc'}]}),
+        (["update", "-g", "-a"], {'services': [{'code': 'abc'}]}, {"command": "update", "target": None, "is_group": True, "is_all": True, 'services': [{'code': 'abc'}]}),
+        (["update", "abc", "-g", "-a"], {'services': [{'code': 'abc'}]}, {"command": "update", "target": "abc", "is_group": True, "is_all": True, 'services': [{'code': 'abc'}]}),
+        (["-g", "-a"], {'services': [{'code': 'abc'}]}, {"command": None, "target": None, "is_group": False, "is_all": False, 'services': [{'code': 'abc'}]}),
+        (["-g"], {'services': [{'code': 'abc'}]}, {"command": None, "target": None, "is_group": False, "is_all": False, 'services': [{'code': 'abc'}]}),
+        (["-a"], {'services': [{'code': 'abc'}]}, {"command": None, "target": None, "is_group": False, "is_all": False, 'services': [{'code': 'abc'}]}),
+        ([], {'services': [{'code': 'abc'}]}, {"command": None, "target": None, "is_group": False, "is_all": False, 'services': [{'code': 'abc'}]}),
+        (["up", "abc"], {}, {"command": 'up', "target": 'abc', "is_group": False, "is_all": False, 'services': []}),
+        (["up", "abc"], {'services': []}, {"command": 'up', "target": 'abc', "is_group": False, "is_all": False, 'services': []}),
         # fmt: on
     ],
 )
-def test_args_to_dict(test_input, expected):
-    assert Args.load(test_input).to_dict() == expected
+def test_config_to_dict(test_args, test_configs, expected):
+    assert Config.load(test_args, test_configs).to_dict() == expected
 
 
 @pytest.mark.parametrize(
-    "test_input,expected",
+    "test_args,test_configs,expected",
     [
-        (["up", "abc"], True),
-        (["down", "abc", "-g"], True),
-        (["down", "abc", "--group"], True),
-        (["update", "-a"], True),
-        (["update", "--all"], True),
-        (["update"], False),
-        (["update", "-g", "-a"], False),
-        (["update", "abc", "-g", "-a"], False),
-        (["-g", "-a"], False),
-        (["-g"], False),
-        (["-a"], False),
-        ([], False),
+        # fmt: off
+        (["up", "abc"], {'services': [{'code': 'abc'}]}, True),
+        (["down", "abc", "-g"], {'services': [{'code': 'abc', 'group': 'abc'}]}, True),
+        (["down", "abc", "--group"], {'services': [{'code': 'abc', 'group': 'abc'}]}, True),
+        (["update", "-a"], {'services': [{'code': 'abc'}]}, True),
+        (["update", "--all"], {'services': [{'code': 'abc'}]}, True),
+        (["update"], {'services': [{'code': 'abc'}]}, False),
+        (["update", "-g", "-a"], {'services': [{'code': 'abc'}]}, False),
+        (["update", "abc", "-g", "-a"], {'services': [{'code': 'abc'}]}, False),
+        (["-g", "-a"], {'services': [{'code': 'abc'}]}, False),
+        (["-g"], {'services': [{'code': 'abc'}]}, False),
+        (["-a"], {'services': [{'code': 'abc'}]}, False),
+        ([], {'services': [{'code': 'abc'}]}, False),
+        (["up", "abc"], {}, False),
+        (["up", "abc"], {'services': []}, False),
+        # fmt: on
     ],
 )
-def test_args_verify(test_input, expected):
-    assert Args.load(test_input).verify() == expected
+def test_config_verify(test_args, test_configs, expected):
+    assert Config.load(test_args, test_configs).verify() == expected
