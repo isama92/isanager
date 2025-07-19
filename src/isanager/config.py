@@ -74,6 +74,9 @@ class Config:
             logger.error("Config `services` are required")
             return False
 
+        # TODO: check all services have code and path
+        # TODO: if service name is not set, set it equal to code
+
         if not self.is_all:
             check_key = "group" if self.is_group else "code"
             service_checks = [srv.get(check_key) for srv in self.services]
@@ -83,10 +86,20 @@ class Config:
 
         return True
 
+    def get_targets(self) -> list:
+        targets = []
+        for srv in self.services:
+            find_key = "group" if self.is_group else "code"
+            if srv.get(find_key) == self.target:
+                targets.append(srv)
+        return targets
+
     @staticmethod
     def load_args(preset_args: list[str] | None = None) -> dict:
         logger.debug(f"loading args")
-        parser = argparse.ArgumentParser(description="Manage your docker compose services")
+        parser = argparse.ArgumentParser(
+            description="Manage your docker compose services"
+        )
 
         parser.add_argument(
             "command",

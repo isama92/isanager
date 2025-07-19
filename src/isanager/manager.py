@@ -1,19 +1,50 @@
+import subprocess
 from src.isanager.config import Config
+from src.isanager.logs import get_logger
+
+logger = get_logger(__name__)
 
 
 def up(config: Config):
-    # TODO:
-    # get service/s - list even f it's a single one so it can be looped regardless
-    # loop services
-    # get path of current service
-    # go to path of current service
-    # run cmd of current service
-    print(config.command, config.target)
+    execute(config)
 
 
 def down(config: Config):
-    print(config.command, config.target)
+    execute(config)
 
 
 def update(config: Config):
-    print(config.command, config.target)
+    execute(config)
+
+
+def execute(config: Config):
+    logger.info(f"{config.command} started")
+    targets = config.get_targets()
+    for target in targets:
+        path = target.get("path")
+        logger.debug(f"setting working directory to '{path}'")
+        # TODO: cd to path
+        continue # TODO: remove me
+        logger.debug(f"running command")
+        success = run_command(["docker", "compose", config.command, "-d"])
+        logger.error('command run successfully' if success else 'command failed')
+    logger.info(f"{config.command} completed")
+
+
+def run_command(command: list[str]) -> bool:
+    process = subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    success = process.returncode == 0
+
+    log = logger.debug if success else logger.error
+
+    if process.stdout:
+        log(process.stdout.decode().strip())
+    if process.stderr:
+        log(process.stderr.decode().strip())
+
+    return success
