@@ -29,6 +29,7 @@ class Config:
     UP = "up"
     DOWN = "down"
     UPDATE = "update"
+    RECREATE = "recreate"
 
     def __init__(
         self,
@@ -104,7 +105,7 @@ class Config:
         parser.add_argument(
             "command",
             type=str,
-            choices=[Config.UP, Config.DOWN, Config.UPDATE],
+            choices=[Config.UP, Config.DOWN, Config.UPDATE, Config.RECREATE],
             help="The command to run",
         )
         parser.add_argument(
