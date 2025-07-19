@@ -86,7 +86,7 @@ class Config:
     @staticmethod
     def load_args(preset_args: list[str] | None = None) -> dict:
         logger.debug(f"loading args")
-        parser = argparse.ArgumentParser(description="Manage your docker services")
+        parser = argparse.ArgumentParser(description="Manage your docker compose services")
 
         parser.add_argument(
             "command",

@@ -1,8 +1,8 @@
 # isanager
 
-Manage your docker services.
+Manage your docker compose services.
 
-Start, stop, and update your docker services. One by one, or all together.
+Start, stop, and update your docker compose services. One by one, by group, or all together.
 
 ## Compatibilities
 
