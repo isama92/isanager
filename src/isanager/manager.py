@@ -1,6 +1,7 @@
 import subprocess
 from src.isanager.config import Config
 from src.isanager.logs import get_logger
+from src.isanager.helpers import replace_env_vars
 
 logger = get_logger(__name__)
 
@@ -73,6 +74,7 @@ def recreate(config: Config):
 
 
 def execute(path: str, cmd: list[str]) -> bool:
+    path = replace_env_vars(path)
     process = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
