@@ -75,8 +75,15 @@ class Config:
             logger.error("Config `services` are required")
             return False
 
-        # TODO: check all services have code and path
-        # TODO: if service name is not set, set it equal to code
+        for srv in self.services:
+            if srv.get("code") is None:
+                logger.error("Service `code` is required")
+                return False
+            if srv.get("path") is None:
+                logger.error("Service `path` is required")
+                return False
+            if srv.get("name") is None:
+                srv["name"] = srv["code"]
 
         if not self.is_all:
             check_key = "group" if self.is_group else "code"

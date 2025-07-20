@@ -10,13 +10,13 @@ def up(config: Config):
     logger.info(f"{config.command} started")
     targets = config.get_targets()
     for target in targets:
-        tcode = target.get("code")
-        logger.debug(f"[{tcode}] running command")
+        tname = target.get("name")
+        logger.debug(f"[{tname}] running command")
         success = execute(target.get("path"), ["docker", "compose", "up", "-d"])
         logger.debug(
-            f"[{tcode}] command run successfully"
+            f"[{tname}] command run successfully"
             if success
-            else f"[{tcode}] command failed"
+            else f"[{tname}] command failed"
         )
     logger.info(f"{config.command} completed")
 
@@ -25,13 +25,13 @@ def down(config: Config):
     logger.info(f"{config.command} started")
     targets = config.get_targets()
     for target in targets:
-        tcode = target.get("code")
-        logger.debug(f"[{tcode}] running command")
+        tname = target.get("name")
+        logger.debug(f"[{tname}] running command")
         success = execute(target.get("path"), ["docker", "compose", "down"])
         logger.debug(
-            f"[{tcode}] command run successfully"
+            f"[{tname}] command run successfully"
             if success
-            else f"[{tcode}] command failed"
+            else f"[{tname}] command failed"
         )
     logger.info(f"{config.command} completed")
 
@@ -40,8 +40,8 @@ def update(config: Config):
     logger.info(f"{config.command} started")
     targets = config.get_targets()
     for target in targets:
-        tcode = target.get("code")
-        logger.debug(f"[{tcode}] running command")
+        tname = target.get("name")
+        logger.debug(f"[{tname}] running command")
         success1 = execute(target.get("path")["docker", "compose", "pull"])
         success2 = execute(
             target.get("path"), ["docker", "compose", "up", "-d", "--force-recreate"]
@@ -49,9 +49,9 @@ def update(config: Config):
         success3 = execute(target.get("path"), ["docker", "image", "prune", "-f"])
         success = success1 and success2 and success3
         logger.debug(
-            f"[{tcode}] command run successfully"
+            f"[{tname}] command run successfully"
             if success
-            else f"[{tcode}] command failed"
+            else f"[{tname}] command failed"
         )
     logger.info(f"{config.command} completed")
 
@@ -60,15 +60,15 @@ def recreate(config: Config):
     logger.info(f"{config.command} started")
     targets = config.get_targets()
     for target in targets:
-        tcode = target.get("code")
-        logger.debug(f"[{tcode}] running command")
+        tname = target.get("name")
+        logger.debug(f"[{tname}] running command")
         success = execute(
             target.get("path"), ["docker", "compose", "up", "-d", "--force-recreate"]
         )
         logger.debug(
-            f"[{tcode}] command run successfully"
+            f"[{tname}] command run successfully"
             if success
-            else f"[{tcode}] command failed"
+            else f"[{tname}] command failed"
         )
     logger.info(f"{config.command} completed")
 
