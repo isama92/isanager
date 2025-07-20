@@ -42,7 +42,7 @@ def update(config: Config):
     for target in targets:
         tname = target.get("name")
         logger.debug(f"[{tname}] running command")
-        success1 = execute(target.get("path")["docker", "compose", "pull"])
+        success1 = execute(target.get("path"), ["docker", "compose", "pull"])
         success2 = execute(
             target.get("path"), ["docker", "compose", "up", "-d", "--force-recreate"]
         )
