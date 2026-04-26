@@ -59,3 +59,15 @@ Examples:
 - `isanager up srvname`: will bring up the service called srvname
 - `isanager up grpname -g`: will bring up all the services having the group grpname
 - `isanager up -a`: will bring up all the services
+
+## TODO
+
+- [ ] Add a `pyproject.toml` with a `[project.scripts]` entry point so `pip install .` (or `pipx install .`) installs an `isanager` binary on PATH, replacing the `pushd`/`source venv`/`deactivate` shell-function in the README.
+- [ ] Move imports from `src.isanager.X` to `isanager.X` so the CLI and `pytest` can be run from any directory, not just the repo root.
+- [ ] Fix `Config.load()` crashing with `AttributeError` when `config.yaml` is missing or empty (`load_configs()` returns `None`, then `.get("services")` blows up).
+- [ ] Make `manager.update()` short-circuit: if `docker compose pull` fails, skip `up --force-recreate` and `image prune` instead of recreating with the stale image.
+- [ ] Make `main()` exit with a non-zero status code when any service command fails, instead of always returning 0.
+- [ ] Catch `KeyError` from `replace_env_vars` inside `manager.execute` so a single bad path doesn't abort an `-a` batch.
+- [ ] Print a one-line summary at the end of `-a` runs (e.g. `3 ok, 2 failed: foo, bar`) so failures aren't lost in the streamed output.
+- [ ] Split `Config.verify()` so validation is pure: move the `srv["name"] = srv["code"]` defaulting into a separate normalization step at load time.
+- [ ] Add tests for `manager.py` (mock `subprocess`) and for `helpers.replace_env_vars` (missing var, multiple vars, no match).

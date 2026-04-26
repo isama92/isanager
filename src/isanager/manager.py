@@ -1,3 +1,4 @@
+import logging
 import subprocess
 from src.isanager.config import Config
 from src.isanager.logs import get_logger
@@ -75,19 +76,26 @@ def recreate(config: Config):
 
 def execute(path: str, cmd: list[str]) -> bool:
     path = replace_env_vars(path)
-    process = subprocess.run(
+    process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         cwd=path,
+        text=True,
+        bufsize=1,
     )
 
+    output_lines = []
+    for line in process.stdout:
+        line = line.rstrip()
+        if line:
+            output_lines.append(line)
+            logger.debug(line)
+
+    process.wait()
     success = process.returncode == 0
 
-    log = logger.debug if success else logger.error
-    if process.stdout:
-        log(process.stdout.decode().strip())
-    if process.stderr:
-        log(process.stderr.decode().strip())
+    if not success and output_lines and not logger.isEnabledFor(logging.DEBUG):
+        logger.error("\n".join(output_lines))
 
     return success
