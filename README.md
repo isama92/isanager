@@ -50,6 +50,7 @@ You have to specify at least one command between:
 - down: will run `docker compose down`
 - update: will pull the images, recreate the container, and then prune the old images 
 - recreate: will run `docker compose up -d --force-recreate`
+- logs: will run `docker compose logs`, add `-f` to follow the output (`docker compose logs -f`). It only works with a single service, not with multiple targets, `-g` or `-a`
 
 The option `-a` will run the command for all the services.
 Or you can specify one or more services/groups between the ones declared in the config.yaml.
@@ -61,6 +62,7 @@ Examples:
 - `isanager up grpname -g`: will bring up all the services having the group grpname
 - `isanager up grp1 grp2 -g`: will bring up all the services having the group grp1 or grp2
 - `isanager up -a`: will bring up all the services
+- `isanager logs srvname -f`: will follow the logs of the service called srvname
 
 ## TODO
 

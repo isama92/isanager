@@ -32,6 +32,8 @@ def main():
         manager.update(configs)
     elif configs.command == configs.RECREATE:
         manager.recreate(configs)
+    elif configs.command == configs.LOGS:
+        manager.logs(configs)
     else:
         logger.error(f"unknown command '{configs.command}'")
         return

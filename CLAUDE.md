@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`isanager` is a small Python CLI that wraps `docker compose` to manage a fleet of services declared in `config.yaml`. It runs `up`, `down`, `update` (pull + force-recreate + image prune), or `recreate` against a single service, a named group of services, or all services.
+`isanager` is a small Python CLI that wraps `docker compose` to manage a fleet of services declared in `config.yaml`. It runs `up`, `down`, `update` (pull + force-recreate + image prune), or `recreate` against one or more services, groups of services, or all services, and `logs` (optionally `-f`) against a single service.
 
 Linux-only (tested on Ubuntu 24.04 and Debian 12). It shells out to the `docker` binary, so Docker must be installed and the user must have permission to run `docker compose`.
 
@@ -17,7 +17,7 @@ All commands must be run from the repo root because imports are rooted at `src.i
 pip install -r requirements.txt
 
 # Run the CLI
-python main.py <command> [target ...] [-g] [-a]
+python main.py <command> [target ...] [-g] [-a] [-f]
 
 # Run tests
 pytest                                          # all tests
@@ -39,7 +39,7 @@ Two files at the repo root, both required at runtime:
   - `name` (optional) — display name in logs; defaults to `code` if omitted.
   - `group` (optional) — used with `-g` to target multiple services at once.
 
-`Config.verify()` fails fast (returns `False`, `main()` exits) if `command` is missing, targets/`-a` are inconsistent, any target does not exist, `-g` and `-a` are combined, or `services` is empty/malformed.
+`Config.verify()` fails fast (returns `False`, `main()` exits) if `command` is missing, targets/`-a` are inconsistent, any target does not exist, `-g` and `-a` are combined, `logs` is not given exactly one service, `-f` is used with a command other than `logs`, or `services` is empty/malformed.
 
 ## Architecture
 
@@ -55,6 +55,8 @@ Single-process CLI, no daemons, no state. Flow in `src/isanager/main.py:main`:
 - calls `config.get_targets()` to resolve `targets` + `is_group` + `is_all` → a list of service dicts (in the order the targets were given, deduplicated),
 - iterates and calls `execute(path, cmd)` per service,
 - `execute()` runs `replace_env_vars(path)` on the cwd, then `subprocess.run` with captured stdout/stderr, logging at `debug` on success and `error` on failure. Failures are logged but the loop continues to the next service.
+
+`logs` is the exception: it runs through `attach()` instead of `execute()`, so Docker writes straight to the terminal (keeping colours, and following with `-f` until Ctrl+C) rather than through the logger.
 
 `update` is the only command that issues multiple docker invocations per service (`pull`, `up -d --force-recreate`, `image prune -f`); they run sequentially and `success` is the AND of all three.
 

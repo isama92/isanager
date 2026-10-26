@@ -25,11 +25,13 @@ class Config:
     targets: list[str]
     is_group: bool
     is_all: bool
+    is_follow: bool
     services: list
     UP = "up"
     DOWN = "down"
     UPDATE = "update"
     RECREATE = "recreate"
+    LOGS = "logs"
 
     def __init__(
         self,
@@ -37,12 +39,14 @@ class Config:
         targets: list[str] | None = None,
         is_group: bool = False,
         is_all: bool = False,
+        is_follow: bool = False,
         services: list | None = None,
     ):
         self.command = command.lower() if command is not None else None
         self.targets = [t.lower() for t in targets] if targets is not None else []
         self.is_group = is_group
         self.is_all = is_all
+        self.is_follow = is_follow
         self.services = services if services is not None else []
 
     def to_dict(self):
@@ -51,12 +55,23 @@ class Config:
             "targets": self.targets,
             "is_group": self.is_group,
             "is_all": self.is_all,
+            "is_follow": self.is_follow,
             "services": self.services,
         }
 
     def verify(self) -> bool:
         if self.command is None:
             logger.error("Command is required")
+            return False
+
+        if self.command == Config.LOGS and (
+            self.is_group or self.is_all or len(self.targets) != 1
+        ):
+            logger.error("Logs only works with a single service")
+            return False
+
+        if self.is_follow and self.command != Config.LOGS:
+            logger.error("Follow can only be used with logs")
             return False
 
         if len(self.targets) == 0 and not self.is_all:
@@ -117,7 +132,7 @@ class Config:
         parser.add_argument(
             "command",
             type=str,
-            choices=[Config.UP, Config.DOWN, Config.UPDATE, Config.RECREATE],
+            choices=[Config.UP, Config.DOWN, Config.UPDATE, Config.RECREATE, Config.LOGS],
             help="The command to run",
         )
         parser.add_argument(
@@ -138,9 +153,16 @@ class Config:
             action=argparse.BooleanOptionalAction,
             help="Target all services",
         )
+        parser.add_argument(
+            "-f",
+            "--follow",
+            action=argparse.BooleanOptionalAction,
+            help="Follow log output, only with logs",
+        )
         parser.set_defaults(
             all=False,
             group=False,
+            follow=False,
         )
 
         try:
@@ -184,5 +206,6 @@ class Config:
             args.get("targets"),
             args.get("group", False),
             args.get("all", False),
+            args.get("follow", False),
             configs.get("services"),
         )

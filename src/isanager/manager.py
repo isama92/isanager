@@ -74,6 +74,31 @@ def recreate(config: Config):
     logger.info(f"{config.command} completed")
 
 
+def logs(config: Config):
+    logger.info(f"{config.command} started")
+    target = config.get_targets()[0]
+    tname = target.get("name")
+    logger.debug(f"[{tname}] running command")
+    cmd = ["docker", "compose", "logs"]
+    if config.is_follow:
+        cmd.append("-f")
+    success = attach(target.get("path"), cmd)
+    logger.debug(
+        f"[{tname}] command run successfully"
+        if success
+        else f"[{tname}] command failed"
+    )
+    logger.info(f"{config.command} completed")
+
+
+def attach(path: str, cmd: list[str]) -> bool:
+    path = replace_env_vars(path)
+    try:
+        return subprocess.run(cmd, cwd=path).returncode == 0
+    except KeyboardInterrupt:
+        return True
+
+
 def execute(path: str, cmd: list[str]) -> bool:
     path = replace_env_vars(path)
     process = subprocess.Popen(
