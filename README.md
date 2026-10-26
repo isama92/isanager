@@ -52,12 +52,14 @@ You have to specify at least one command between:
 - recreate: will run `docker compose up -d --force-recreate`
 
 The option `-a` will run the command for all the services.
-Or you can specify a service/group between the ones declared in the config.yaml.
-The option `-g` is used to specify the 2nd parameter is a group and not a service name.
+Or you can specify one or more services/groups between the ones declared in the config.yaml.
+The option `-g` is used to specify the targets are groups and not service names.
 
 Examples:
 - `isanager up srvname`: will bring up the service called srvname
+- `isanager update srv1 srv2`: will update the services called srv1 and srv2
 - `isanager up grpname -g`: will bring up all the services having the group grpname
+- `isanager up grp1 grp2 -g`: will bring up all the services having the group grp1 or grp2
 - `isanager up -a`: will bring up all the services
 
 ## TODO

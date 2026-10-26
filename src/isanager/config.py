@@ -22,7 +22,7 @@ def load_env() -> bool:
 
 class Config:
     command: str | None
-    target: str | None
+    targets: list[str]
     is_group: bool
     is_all: bool
     services: list
@@ -34,13 +34,13 @@ class Config:
     def __init__(
         self,
         command: str | None = None,
-        target: str | None = None,
+        targets: list[str] | None = None,
         is_group: bool = False,
         is_all: bool = False,
         services: list | None = None,
     ):
         self.command = command.lower() if command is not None else None
-        self.target = target.lower() if target is not None else None
+        self.targets = [t.lower() for t in targets] if targets is not None else []
         self.is_group = is_group
         self.is_all = is_all
         self.services = services if services is not None else []
@@ -48,7 +48,7 @@ class Config:
     def to_dict(self):
         return {
             "command": self.command,
-            "target": self.target,
+            "targets": self.targets,
             "is_group": self.is_group,
             "is_all": self.is_all,
             "services": self.services,
@@ -59,11 +59,11 @@ class Config:
             logger.error("Command is required")
             return False
 
-        if self.target is None and not self.is_all:
+        if len(self.targets) == 0 and not self.is_all:
             logger.error("Target is required")
             return False
 
-        if self.target is not None and self.is_all:
+        if len(self.targets) > 0 and self.is_all:
             logger.error("Is all cannot be used with target")
             return False
 
@@ -88,9 +88,10 @@ class Config:
         if not self.is_all:
             check_key = "group" if self.is_group else "code"
             service_checks = [srv.get(check_key) for srv in self.services]
-            if self.target not in service_checks:
-                logger.error(f"Service {check_key} '{self.target}' does not exist")
-                return False
+            for target in self.targets:
+                if target not in service_checks:
+                    logger.error(f"Service {check_key} '{target}' does not exist")
+                    return False
 
         return True
 
@@ -98,11 +99,12 @@ class Config:
         if self.is_all:
             return self.services
 
+        find_key = "group" if self.is_group else "code"
         targets = []
-        for srv in self.services:
-            find_key = "group" if self.is_group else "code"
-            if srv.get(find_key) == self.target:
-                targets.append(srv)
+        for target in self.targets:
+            for srv in self.services:
+                if srv.get(find_key) == target and srv not in targets:
+                    targets.append(srv)
         return targets
 
     @staticmethod
@@ -119,22 +121,20 @@ class Config:
             help="The command to run",
         )
         parser.add_argument(
-            "target",
+            "targets",
             type=str,
-            nargs="?",
-            help="The service or group the command will be executed on",
+            nargs="*",
+            help="The services or groups the command will be executed on",
         )
         parser.add_argument(
             "-g",
             "--group",
-            type=bool,
             action=argparse.BooleanOptionalAction,
             help="True if target is a group",
         )
         parser.add_argument(
             "-a",
             "--all",
-            type=bool,
             action=argparse.BooleanOptionalAction,
             help="Target all services",
         )
@@ -181,7 +181,7 @@ class Config:
 
         return Config(
             args.get("command"),
-            args.get("target"),
+            args.get("targets"),
             args.get("group", False),
             args.get("all", False),
             configs.get("services"),

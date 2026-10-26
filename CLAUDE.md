@@ -17,7 +17,7 @@ All commands must be run from the repo root because imports are rooted at `src.i
 pip install -r requirements.txt
 
 # Run the CLI
-python main.py <command> [target] [-g] [-a]
+python main.py <command> [target ...] [-g] [-a]
 
 # Run tests
 pytest                                          # all tests
@@ -34,12 +34,12 @@ Two files at the repo root, both required at runtime:
 
 - `.env` — currently only `LOG_LEVEL` (`error` | `warning` | `info` | `debug`, default `error`). Loaded via `python-dotenv`.
 - `config.yaml` — defines `services:`. Each service entry has:
-  - `code` (required) — the identifier passed as `target`
+  - `code` (required) — the identifier passed as a `target`
   - `path` (required) — working directory passed as `cwd` to `docker compose`. Supports `${VAR}` expansion (variable names limited to `[a-zA-Z0-9_]`); a missing env var raises `KeyError` and aborts that service.
   - `name` (optional) — display name in logs; defaults to `code` if omitted.
   - `group` (optional) — used with `-g` to target multiple services at once.
 
-`Config.verify()` fails fast (returns `False`, `main()` exits) if `command` is missing, target/`-a` are inconsistent, `-g` and `-a` are combined, or `services` is empty/malformed.
+`Config.verify()` fails fast (returns `False`, `main()` exits) if `command` is missing, targets/`-a` are inconsistent, any target does not exist, `-g` and `-a` are combined, or `services` is empty/malformed.
 
 ## Architecture
 
@@ -52,7 +52,7 @@ Single-process CLI, no daemons, no state. Flow in `src/isanager/main.py:main`:
 5. Dispatch to `manager.up/down/update/recreate` based on `configs.command`.
 
 `manager.py` is the only module that talks to Docker. Each command:
-- calls `config.get_targets()` to resolve `target` + `is_group` + `is_all` → a list of service dicts,
+- calls `config.get_targets()` to resolve `targets` + `is_group` + `is_all` → a list of service dicts (in the order the targets were given, deduplicated),
 - iterates and calls `execute(path, cmd)` per service,
 - `execute()` runs `replace_env_vars(path)` on the cwd, then `subprocess.run` with captured stdout/stderr, logging at `debug` on success and `error` on failure. Failures are logged but the loop continues to the next service.
 
