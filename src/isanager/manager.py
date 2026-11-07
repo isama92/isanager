@@ -1,8 +1,12 @@
 import logging
+import os
 import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor
 from src.isanager.config import Config
 from src.isanager.logs import get_logger
-from src.isanager.helpers import replace_env_vars
+from src.isanager.helpers import MissingEnvVar, replace_env_vars
+import src.isanager.status as status_view
 
 logger = get_logger(__name__)
 
@@ -89,6 +93,57 @@ def logs(config: Config):
         else f"[{tname}] command failed"
     )
     logger.info(f"{config.command} completed")
+
+
+def status(config: Config):
+    logger.info(f"{config.command} started")
+    targets = config.get_targets()
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        rows = list(pool.map(service_status, targets))
+    color = sys.stdout.isatty() and not os.getenv("NO_COLOR")
+    try:
+        print(status_view.render_table(rows, color))
+        sys.stdout.flush()
+    except BrokenPipeError:
+        # reader went away (e.g. `| head`): point stdout at devnull so the
+        # interpreter's final flush doesn't print a traceback
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+    logger.info(f"{config.command} completed")
+
+
+def service_status(target: dict) -> dict:
+    row = {"name": target.get("name"), "group": target.get("group")}
+
+    try:
+        path = replace_env_vars(target.get("path"))
+    except MissingEnvVar as e:
+        return {**row, "state": status_view.ERROR, "error": f"missing env var {e.name}"}
+
+    if not os.path.isdir(path):
+        return {**row, "state": status_view.ERROR, "error": f"path not found: {path}"}
+
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "ps", "-a", "--format", "json"],
+            cwd=path,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as e:
+        # e.g. docker not on PATH, or no permission to enter the folder
+        return {**row, "state": status_view.ERROR, "error": str(e)}
+    if result.returncode != 0:
+        stderr_lines = result.stderr.strip().splitlines()
+        message = stderr_lines[0] if stderr_lines else "docker compose ps failed"
+        logger.debug(f"[{row['name']}] {result.stderr.strip()}")
+        return {**row, "state": status_view.ERROR, "error": message}
+
+    try:
+        containers = status_view.parse_ps_output(result.stdout)
+    except ValueError:
+        return {**row, "state": status_view.ERROR, "error": "unreadable docker output"}
+
+    return {**row, **status_view.summarize(containers)}
 
 
 def attach(path: str, cmd: list[str]) -> bool:
