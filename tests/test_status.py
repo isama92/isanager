@@ -37,6 +37,8 @@ def test_parse_ps_output_invalid():
         ([_c(health="healthy"), _c(health="unhealthy")], {"state": "up", "health": "unhealthy", "running": 2, "total": 2, "uptime": "3 hours"}),
         ([_c(health="healthy"), _c(health="starting")], {"state": "up", "health": "starting", "running": 2, "total": 2, "uptime": "3 hours"}),
         ([_c(health="healthy"), _c()], {"state": "up", "health": "healthy", "running": 2, "total": 2, "uptime": "3 hours"}),
+        ([_c("restarting", status="Restarting (1) 2 seconds ago")], {"state": "restarting", "health": "", "running": 0, "total": 1, "uptime": ""}),
+        ([_c("restarting"), _c()], {"state": "up", "health": "", "running": 1, "total": 2, "uptime": "3 hours"}),
         # health of a stopped container is ignored
         ([_c(), _c("exited", health="unhealthy")], {"state": "up", "health": "", "running": 1, "total": 2, "uptime": "3 hours"}),
         # fmt: on
@@ -73,3 +75,16 @@ def test_render_table_color():
     assert "\033[31mdown" in output
     assert "\033[33merror" in output
     assert "\033[32mJellyfin" not in output
+
+
+def test_render_table_non_string_values():
+    rows = [{"name": 2024, "group": 1, "state": "up", "health": "", "running": 1, "total": 1, "uptime": "1 hour"},
+            {"name": 7, "group": 0, "state": "error", "error": "boom"}]
+    lines = render_table(rows).splitlines()
+    assert lines[1].split()[:2] == ["2024", "1"]
+    assert lines[2].split()[:2] == ["7", "0"]
+
+
+def test_render_table_restarting_color():
+    rows = [{"name": "a", "group": None, "state": "restarting", "health": "", "running": 0, "total": 1, "uptime": ""}]
+    assert "\033[33mrestarting" in render_table(rows, color=True)

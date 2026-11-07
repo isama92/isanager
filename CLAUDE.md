@@ -39,7 +39,7 @@ Two files at the repo root, both required at runtime:
   - `name` (optional) — display name in logs; defaults to `code` if omitted.
   - `group` (optional) — used with `-g` to target multiple services at once.
 
-`status` with no targets is the only command that doesn't require targets: `verify()` sets `is_all = True` for it.
+`status` with no targets (and no `-g`) is the only command that doesn't require targets: `Config.lists_all_by_default()` makes both `verify()` accept it and `get_targets()` return every service, so `verify()` stays free of side effects on `is_all`.
 
 `Config.verify()` fails fast (returns `False`, `main()` exits) if `command` is missing, targets/`-a` are inconsistent, any target does not exist, `-g` and `-a` are combined, `logs` is not given exactly one service, `-f` is used with a command other than `logs`, or `services` is empty/malformed.
 
@@ -60,7 +60,7 @@ Single-process CLI, no daemons, no state. Flow in `src/isanager/main.py:main`:
 
 `logs` is the exception: it runs through `attach()` instead of `execute()`, so Docker writes straight to the terminal (keeping colours, and following with `-f` until Ctrl+C) rather than through the logger.
 
-`status` runs `docker compose ps -a --format json` per service in a thread pool (`service_status()`), and never aborts on a bad service: env var errors, missing paths and docker failures become `error` rows. Parsing, summarising (up if any container is running, worst health among running containers) and table rendering live in `src/isanager/status.py`, which is pure and has no subprocess calls. Colours are only emitted when stdout is a TTY and `NO_COLOR` is unset.
+`status` runs `docker compose ps -a --format json` per service in a thread pool (`service_status()`), and never aborts on a bad service: env var errors, missing paths, `OSError` from `subprocess.run` (docker not on PATH, unreadable folder) and docker failures become `error` rows. A closed pipe (`| head`) is swallowed. Parsing, summarising (up if any container is running, `restarting` if none runs but one is crash looping, worst health among running containers) and table rendering live in `src/isanager/status.py`, which is pure and has no subprocess calls. Colours are only emitted when stdout is a TTY and `NO_COLOR` is unset.
 
 `update` is the only command that issues multiple docker invocations per service (`pull`, `up -d --force-recreate`, `image prune -f`); they run sequentially and `success` is the AND of all three.
 

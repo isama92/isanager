@@ -75,11 +75,11 @@ class Config:
             logger.error("Follow can only be used with logs")
             return False
 
-        if self.command == Config.STATUS and len(self.targets) == 0:
-            # status with no targets lists every service
-            self.is_all = True
-
-        if len(self.targets) == 0 and not self.is_all:
+        if (
+            len(self.targets) == 0
+            and not self.is_all
+            and not self.lists_all_by_default()
+        ):
             logger.error("Target is required")
             return False
 
@@ -115,8 +115,16 @@ class Config:
 
         return True
 
+    def lists_all_by_default(self) -> bool:
+        # status without targets (and without -g) lists every service
+        return (
+            self.command == Config.STATUS
+            and len(self.targets) == 0
+            and not self.is_group
+        )
+
     def get_targets(self) -> list:
-        if self.is_all:
+        if self.is_all or self.lists_all_by_default():
             return self.services
 
         find_key = "group" if self.is_group else "code"

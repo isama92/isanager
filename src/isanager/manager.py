@@ -101,7 +101,13 @@ def status(config: Config):
     with ThreadPoolExecutor(max_workers=8) as pool:
         rows = list(pool.map(service_status, targets))
     color = sys.stdout.isatty() and not os.getenv("NO_COLOR")
-    print(status_view.render_table(rows, color))
+    try:
+        print(status_view.render_table(rows, color))
+        sys.stdout.flush()
+    except BrokenPipeError:
+        # reader went away (e.g. `| head`): point stdout at devnull so the
+        # interpreter's final flush doesn't print a traceback
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
     logger.info(f"{config.command} completed")
 
 
@@ -116,12 +122,16 @@ def service_status(target: dict) -> dict:
     if not os.path.isdir(path):
         return {**row, "state": status_view.ERROR, "error": f"path not found: {path}"}
 
-    result = subprocess.run(
-        ["docker", "compose", "ps", "-a", "--format", "json"],
-        cwd=path,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "ps", "-a", "--format", "json"],
+            cwd=path,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as e:
+        # e.g. docker not on PATH, or no permission to enter the folder
+        return {**row, "state": status_view.ERROR, "error": str(e)}
     if result.returncode != 0:
         stderr_lines = result.stderr.strip().splitlines()
         message = stderr_lines[0] if stderr_lines else "docker compose ps failed"

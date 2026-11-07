@@ -51,7 +51,7 @@ You have to specify at least one command between:
 - update: will pull the images, recreate the container, and then prune the old images 
 - recreate: will run `docker compose up -d --force-recreate`
 - logs: will run `docker compose logs`, add `-f` to follow the output (`docker compose logs -f`). It only works with a single service, not with multiple targets, `-g` or `-a`
-- status: shows a table of the services with their status (`up` if at least one container is running, `down` otherwise), the healthcheck result when the service has one, running/total containers and uptime. Without targets it lists all the services; targets and `-g` can be used to filter. Colours are disabled when the output is piped (e.g. `isanager status | less` for long lists) or when `NO_COLOR` is set
+- status: shows a table of the services with their status (`up` if at least one container is running, `restarting` if none is running but one is stuck in a restart loop, `down` otherwise), the healthcheck result when the service has one, running/total containers and uptime. Without targets it lists all the services; targets and `-g` can be used to filter. Colours are disabled when the output is piped (e.g. `isanager status | less` for long lists) or when `NO_COLOR` is set
 
 The option `-a` will run the command for all the services.
 Or you can specify one or more services/groups between the ones declared in the config.yaml.

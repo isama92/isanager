@@ -3,6 +3,7 @@ import re
 
 UP = "up"
 DOWN = "down"
+RESTARTING = "restarting"
 ERROR = "error"
 
 HEADERS = ["NAME", "GROUP", "STATUS", "HEALTH", "CONTAINERS", "UPTIME"]
@@ -16,6 +17,7 @@ _RESET = "\033[0m"
 _COLORS = {
     UP: _GREEN,
     DOWN: _RED,
+    RESTARTING: _YELLOW,
     ERROR: _YELLOW,
     "healthy": _GREEN,
     "unhealthy": _RED,
@@ -47,6 +49,7 @@ def _uptime(status: str) -> str:
 
 def summarize(containers: list[dict]) -> dict:
     running = [c for c in containers if c.get("State") == "running"]
+    restarting = any(c.get("State") == "restarting" for c in containers)
 
     health_values = {c.get("Health") for c in running if c.get("Health")}
     if "unhealthy" in health_values:
@@ -59,7 +62,9 @@ def summarize(containers: list[dict]) -> dict:
         health = ""
 
     return {
-        "state": UP if running else DOWN,
+        # restarting only when nothing runs: a crash loop is neither up
+        # nor a deliberate stop
+        "state": UP if running else RESTARTING if restarting else DOWN,
         "health": health,
         "running": len(running),
         "total": len(containers),
@@ -83,13 +88,16 @@ def render_table(rows: list[dict], color: bool = False) -> str:
     """
     cells = []
     for row in rows:
+        # YAML may give ints (e.g. `code: 2024`), the table needs text
+        name = str(row["name"])
+        group = "-" if row.get("group") is None else str(row["group"])
         if row["state"] == ERROR:
-            cells.append([row["name"], row.get("group") or "-", ERROR, row.get("error", "")])
+            cells.append([name, group, ERROR, row.get("error", "")])
         else:
             cells.append(
                 [
-                    row["name"],
-                    row.get("group") or "-",
+                    name,
+                    group,
                     row["state"],
                     row.get("health", ""),
                     f"{row.get('running', 0)}/{row.get('total', 0)}",

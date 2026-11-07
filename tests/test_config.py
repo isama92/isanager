@@ -97,7 +97,5 @@ def test_config_verify(test_args, test_configs, expected):
 )
 def test_config_get_targets(test_args, expected_codes):
     configs = {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}, {'code': 'ghi', 'path': '/srv/ghi', 'group': 'g2'}]}
-    loaded = Config.load(test_args, configs)
-    assert loaded.verify()
-    targets = loaded.get_targets()
+    targets = Config.load(test_args, configs).get_targets()
     assert [srv["code"] for srv in targets] == expected_codes
