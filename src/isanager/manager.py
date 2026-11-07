@@ -5,7 +5,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from src.isanager.config import Config
 from src.isanager.logs import get_logger
-from src.isanager.helpers import replace_env_vars
+from src.isanager.helpers import MissingEnvVar, replace_env_vars
 import src.isanager.status as status_view
 
 logger = get_logger(__name__)
@@ -116,8 +116,8 @@ def service_status(target: dict) -> dict:
 
     try:
         path = replace_env_vars(target.get("path"))
-    except KeyError as e:
-        return {**row, "state": status_view.ERROR, "error": e.args[0]}
+    except MissingEnvVar as e:
+        return {**row, "state": status_view.ERROR, "error": f"missing env var {e.name}"}
 
     if not os.path.isdir(path):
         return {**row, "state": status_view.ERROR, "error": f"path not found: {path}"}

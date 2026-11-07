@@ -70,4 +70,4 @@ Imports are written as `from src.isanager.X import ...` (absolute from repo root
 
 ### Tests
 
-`tests/test_config.py` is parametrized over (`argv`, `config_dict`, `expected`) tuples and exercises `Config.load(...).to_dict()` and `Config.verify()`. `tests/test_status.py` covers the pure `status.py` functions. There are currently no tests for `manager.py` (it would require mocking `subprocess.run`); `pytest-mock` is listed but commented out in `requirements.txt`.
+`tests/test_config.py` is parametrized over (`argv`, `config_dict`, `expected`) tuples and exercises `Config.load(...).to_dict()` and `Config.verify()`. `tests/test_status.py` covers the pure `status.py` functions, `tests/test_helpers.py` covers `replace_env_vars` and `MissingEnvVar`. There are currently no tests for `manager.py` (it would require mocking `subprocess.run`); `pytest-mock` is listed but commented out in `requirements.txt`.
