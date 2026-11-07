@@ -32,6 +32,7 @@ class Config:
     UPDATE = "update"
     RECREATE = "recreate"
     LOGS = "logs"
+    STATUS = "status"
 
     def __init__(
         self,
@@ -73,6 +74,10 @@ class Config:
         if self.is_follow and self.command != Config.LOGS:
             logger.error("Follow can only be used with logs")
             return False
+
+        if self.command == Config.STATUS and len(self.targets) == 0:
+            # status with no targets lists every service
+            self.is_all = True
 
         if len(self.targets) == 0 and not self.is_all:
             logger.error("Target is required")
@@ -132,7 +137,14 @@ class Config:
         parser.add_argument(
             "command",
             type=str,
-            choices=[Config.UP, Config.DOWN, Config.UPDATE, Config.RECREATE, Config.LOGS],
+            choices=[
+                Config.UP,
+                Config.DOWN,
+                Config.UPDATE,
+                Config.RECREATE,
+                Config.LOGS,
+                Config.STATUS,
+            ],
             help="The command to run",
         )
         parser.add_argument(

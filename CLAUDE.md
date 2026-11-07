@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`isanager` is a small Python CLI that wraps `docker compose` to manage a fleet of services declared in `config.yaml`. It runs `up`, `down`, `update` (pull + force-recreate + image prune), or `recreate` against one or more services, groups of services, or all services, and `logs` (optionally `-f`) against a single service.
+`isanager` is a small Python CLI that wraps `docker compose` to manage a fleet of services declared in `config.yaml`. It runs `up`, `down`, `update` (pull + force-recreate + image prune), or `recreate` against one or more services, groups of services, or all services, `logs` (optionally `-f`) against a single service, and `status` (all services by default, or filtered by targets/`-g`).
 
 Linux-only (tested on Ubuntu 24.04 and Debian 12). It shells out to the `docker` binary, so Docker must be installed and the user must have permission to run `docker compose`.
 
@@ -39,6 +39,8 @@ Two files at the repo root, both required at runtime:
   - `name` (optional) — display name in logs; defaults to `code` if omitted.
   - `group` (optional) — used with `-g` to target multiple services at once.
 
+`status` with no targets is the only command that doesn't require targets: `verify()` sets `is_all = True` for it.
+
 `Config.verify()` fails fast (returns `False`, `main()` exits) if `command` is missing, targets/`-a` are inconsistent, any target does not exist, `-g` and `-a` are combined, `logs` is not given exactly one service, `-f` is used with a command other than `logs`, or `services` is empty/malformed.
 
 ## Architecture
@@ -58,6 +60,8 @@ Single-process CLI, no daemons, no state. Flow in `src/isanager/main.py:main`:
 
 `logs` is the exception: it runs through `attach()` instead of `execute()`, so Docker writes straight to the terminal (keeping colours, and following with `-f` until Ctrl+C) rather than through the logger.
 
+`status` runs `docker compose ps -a --format json` per service in a thread pool (`service_status()`), and never aborts on a bad service: env var errors, missing paths and docker failures become `error` rows. Parsing, summarising (up if any container is running, worst health among running containers) and table rendering live in `src/isanager/status.py`, which is pure and has no subprocess calls. Colours are only emitted when stdout is a TTY and `NO_COLOR` is unset.
+
 `update` is the only command that issues multiple docker invocations per service (`pull`, `up -d --force-recreate`, `image prune -f`); they run sequentially and `success` is the AND of all three.
 
 ### Import layout
@@ -66,4 +70,4 @@ Imports are written as `from src.isanager.X import ...` (absolute from repo root
 
 ### Tests
 
-`tests/test_config.py` is parametrized over (`argv`, `config_dict`, `expected`) tuples and exercises `Config.load(...).to_dict()` and `Config.verify()`. There are currently no tests for `manager.py` (it would require mocking `subprocess.run`); `pytest-mock` is listed but commented out in `requirements.txt`.
+`tests/test_config.py` is parametrized over (`argv`, `config_dict`, `expected`) tuples and exercises `Config.load(...).to_dict()` and `Config.verify()`. `tests/test_status.py` covers the pure `status.py` functions. There are currently no tests for `manager.py` (it would require mocking `subprocess.run`); `pytest-mock` is listed but commented out in `requirements.txt`.

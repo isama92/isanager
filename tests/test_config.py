@@ -25,6 +25,7 @@ from src.isanager.config import Config
         (["up", "g1", "g2", "-g"], {'services': [{'code': 'abc', 'group': 'g1'}, {'code': 'def', 'group': 'g1'}, {'code': 'ghi', 'group': 'g2'}]}, {"command": "up", "targets": ["g1", "g2"], "is_group": True, "is_all": False, "is_follow": False, 'services': [{'code': 'abc', 'group': 'g1'}, {'code': 'def', 'group': 'g1'}, {'code': 'ghi', 'group': 'g2'}]}),
         (["logs", "abc"], {'services': [{'code': 'abc'}]}, {"command": "logs", "targets": ["abc"], "is_group": False, "is_all": False, "is_follow": False, 'services': [{'code': 'abc'}]}),
         (["logs", "abc", "-f"], {'services': [{'code': 'abc'}]}, {"command": "logs", "targets": ["abc"], "is_group": False, "is_all": False, "is_follow": True, 'services': [{'code': 'abc'}]}),
+        (["status"], {'services': [{'code': 'abc'}]}, {"command": "status", "targets": [], "is_group": False, "is_all": False, "is_follow": False, 'services': [{'code': 'abc'}]}),
         # fmt: on
     ],
 )
@@ -64,6 +65,13 @@ def test_config_to_dict(test_args, test_configs, expected):
         (["logs", "-a"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, False),
         (["logs", "xyz"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, False),
         (["up", "abc", "-f"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, False),
+        (["status"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, True),
+        (["status", "-a"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, True),
+        (["status", "abc"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, True),
+        (["status", "g1", "-g"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, True),
+        (["status", "xyz"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, False),
+        (["status", "-g"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, False),
+        (["status", "-f"], {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}]}, False),
         # fmt: on
     ],
 )
@@ -82,10 +90,14 @@ def test_config_verify(test_args, test_configs, expected):
         (["up", "g2", "g1", "-g"], ["ghi", "abc", "def"]),
         (["up", "g1", "g1", "-g"], ["abc", "def"]),
         (["up", "-a"], ["abc", "def", "ghi"]),
+        (["status"], ["abc", "def", "ghi"]),
+        (["status", "g2", "-g"], ["ghi"]),
         # fmt: on
     ],
 )
 def test_config_get_targets(test_args, expected_codes):
-    configs = {'services': [{'code': 'abc', 'group': 'g1'}, {'code': 'def', 'group': 'g1'}, {'code': 'ghi', 'group': 'g2'}]}
-    targets = Config.load(test_args, configs).get_targets()
+    configs = {'services': [{'code': 'abc', 'path': '/srv/abc', 'group': 'g1'}, {'code': 'def', 'path': '/srv/def', 'group': 'g1'}, {'code': 'ghi', 'path': '/srv/ghi', 'group': 'g2'}]}
+    loaded = Config.load(test_args, configs)
+    assert loaded.verify()
+    targets = loaded.get_targets()
     assert [srv["code"] for srv in targets] == expected_codes

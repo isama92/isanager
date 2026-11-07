@@ -51,6 +51,7 @@ You have to specify at least one command between:
 - update: will pull the images, recreate the container, and then prune the old images 
 - recreate: will run `docker compose up -d --force-recreate`
 - logs: will run `docker compose logs`, add `-f` to follow the output (`docker compose logs -f`). It only works with a single service, not with multiple targets, `-g` or `-a`
+- status: shows a table of the services with their status (`up` if at least one container is running, `down` otherwise), the healthcheck result when the service has one, running/total containers and uptime. Without targets it lists all the services; targets and `-g` can be used to filter. Colours are disabled when the output is piped (e.g. `isanager status | less` for long lists) or when `NO_COLOR` is set
 
 The option `-a` will run the command for all the services.
 Or you can specify one or more services/groups between the ones declared in the config.yaml.
@@ -63,6 +64,8 @@ Examples:
 - `isanager up grp1 grp2 -g`: will bring up all the services having the group grp1 or grp2
 - `isanager up -a`: will bring up all the services
 - `isanager logs srvname -f`: will follow the logs of the service called srvname
+- `isanager status`: will show the status of all the services
+- `isanager status grpname -g`: will show the status of the services having the group grpname
 
 ## TODO
 
